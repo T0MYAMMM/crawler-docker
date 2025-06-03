@@ -1,0 +1,11 @@
+Scrapy==2.13.1
+beautifulsoup4==4.13.4
+kafka-python==2.2.10
+psycopg2-binary==2.9.10
+python-dotenv==1.1.0
+urllib3==2.4.0
+pytz==2025.2
+uvicorn==0.34.3
+fastapi==0.115.12
+scrapyrt==0.16.0
+httpx==0.28.1

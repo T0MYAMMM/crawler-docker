@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+  # Single Scrapyd instance for testing
+  scrapyd-test:
+    build:
+      context: .
+      dockerfile: dockerfiles/Dockerfile.scrapyd
+    container_name: scrapyd-test
+    ports:
+      - "6801:6800"
+    environment:
+      - PYTHONPATH=/app
+      - MAX_PROC=2
+      - MAX_PROC_PER_CPU=1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6800/daemonstatus.json"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - test-network
+
+  # Job scheduler for testing
+  job-scheduler-test:
+    build:
+      context: .
+      dockerfile: dockerfiles/Dockerfile.scheduler
+    container_name: job-scheduler-test
+    ports:
+      - "8080:8080"
+    environment:
+      - SCRAPYD_SERVICES=http://scrapyd-test:6800
+      - PG_HOST=postgres-test
+      - PG_DATABASE=onm_test
+      - PG_USER=test_user
+      - PG_PASSWORD=test_pass
+      - BATCH_SIZE=5
+      - MAX_CONCURRENT_JOBS=2
+      - CHECK_INTERVAL=5
+      - LOG_LEVEL=DEBUG
+    depends_on:
+      - scrapyd-test
+      - postgres-test
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - test-network
+
+  # Test database
+  postgres-test:
+    image: postgres:15
+    container_name: postgres-test
+    environment:
+      - POSTGRES_DB=onm_test
+      - POSTGRES_USER=test_user
+      - POSTGRES_PASSWORD=test_pass
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"  # Different port to avoid conflicts
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d onm_test"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - test-network
+
+  # Redis for testing (if needed for caching)
+  redis-test:
+    image: redis:7-alpine
+    container_name: redis-test
+    ports:
+      - "6380:6379"  # Different port to avoid conflicts
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - test-network
+
+volumes:
+  postgres_test_data:
+
+networks:
+  test-network:
+    driver: bridge 

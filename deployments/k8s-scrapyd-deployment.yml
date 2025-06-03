@@ -1,0 +1,500 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: crawler-system
+  labels:
+    name: crawler-system
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: scrapyd-config
+  namespace: crawler-system
+data:
+  scrapyd.conf: |
+    [scrapyd]
+    eggs_dir    = /app/eggs
+    logs_dir    = /app/logs
+    items_dir   = /app/items
+    jobs_to_keep = 10
+    finished_to_keep = 200
+    max_proc = 4
+    max_proc_per_cpu = 2
+    poll_interval = 5.0
+    bind_address = 0.0.0.0
+    http_port = 6800
+    debug = off
+    runner = scrapyd.runner
+    application = scrapyd.app.application
+    launcher = scrapyd.launcher.Launcher
+    webroot = scrapyd.website.Root
+
+    [services]
+    schedule.json     = scrapyd.webservice.Schedule
+    cancel.json       = scrapyd.webservice.Cancel
+    addversion.json   = scrapyd.webservice.AddVersion
+    listprojects.json = scrapyd.webservice.ListProjects
+    listversions.json = scrapyd.webservice.ListVersions
+    listspiders.json  = scrapyd.webservice.ListSpiders
+    delproject.json   = scrapyd.webservice.DeleteProject
+    delversion.json   = scrapyd.webservice.DeleteVersion
+    listjobs.json     = scrapyd.webservice.ListJobs
+    daemonstatus.json = scrapyd.webservice.DaemonStatus
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: crawler-secrets
+  namespace: crawler-system
+type: Opaque
+data:
+  # Base64 encoded values - replace with your actual encoded secrets
+  postgres-password: b25tZGI=  # "onmdb" encoded
+  # Add other secrets as needed
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scrapyd-cluster
+  namespace: crawler-system
+  labels:
+    app: scrapyd
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: scrapyd
+  template:
+    metadata:
+      labels:
+        app: scrapyd
+    spec:
+      containers:
+      - name: scrapyd
+        image: your-registry/crawler-scrapyd:latest
+        ports:
+        - containerPort: 6800
+          name: http
+        env:
+        - name: PYTHONPATH
+          value: "/app"
+        - name: MAX_PROC
+          value: "4"
+        - name: MAX_PROC_PER_CPU
+          value: "2"
+        volumeMounts:
+        - name: scrapyd-config
+          mountPath: /etc/scrapyd
+        - name: logs
+          mountPath: /app/logs
+        - name: eggs
+          mountPath: /app/eggs
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /daemonstatus.json
+            port: 6800
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /daemonstatus.json
+            port: 6800
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+      volumes:
+      - name: scrapyd-config
+        configMap:
+          name: scrapyd-config
+      - name: logs
+        emptyDir: {}
+      - name: eggs
+        emptyDir: {}
+      restartPolicy: Always
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: scrapyd-service
+  namespace: crawler-system
+  labels:
+    app: scrapyd
+spec:
+  type: ClusterIP
+  ports:
+  - port: 6800
+    targetPort: 6800
+    protocol: TCP
+    name: http
+  selector:
+    app: scrapyd
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: job-scheduler
+  namespace: crawler-system
+  labels:
+    app: job-scheduler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: job-scheduler
+  template:
+    metadata:
+      labels:
+        app: job-scheduler
+    spec:
+      containers:
+      - name: scheduler
+        image: your-registry/crawler-scheduler:latest
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: SCRAPYD_SERVICES
+          value: "http://scrapyd-service:6800"
+        - name: PG_HOST
+          value: "postgres-service"
+        - name: PG_DATABASE
+          value: "onm"
+        - name: PG_USER
+          value: "onm_admin"
+        - name: PG_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: crawler-secrets
+              key: postgres-password
+        - name: BATCH_SIZE
+          value: "30"
+        - name: MAX_CONCURRENT_JOBS
+          value: "4"
+        - name: CHECK_INTERVAL
+          value: "10"
+        - name: LOG_LEVEL
+          value: "INFO"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+      restartPolicy: Always
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: scheduler-service
+  namespace: crawler-system
+  labels:
+    app: job-scheduler
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: job-scheduler
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: crawler-system
+  labels:
+    app: postgres
+spec:
+  serviceName: postgres-service
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15
+        ports:
+        - containerPort: 5432
+          name: postgres
+        env:
+        - name: POSTGRES_DB
+          value: "onm"
+        - name: POSTGRES_USER
+          value: "onm_admin"
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: crawler-secrets
+              key: postgres-password
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - onm_admin
+            - -d
+            - onm
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - onm_admin
+            - -d
+            - onm
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+  volumeClaimTemplates:
+  - metadata:
+      name: postgres-storage
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 20Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  namespace: crawler-system
+  labels:
+    app: postgres
+spec:
+  type: ClusterIP
+  ports:
+  - port: 5432
+    targetPort: 5432
+    protocol: TCP
+    name: postgres
+  selector:
+    app: postgres
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: scrapyd-hpa
+  namespace: crawler-system
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: scrapyd-cluster
+  minReplicas: 4
+  maxReplicas: 12
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+      - type: Pods
+        value: 4
+        periodSeconds: 15
+      selectPolicy: Max
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: crawler-ingress
+  namespace: crawler-system
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/rate-limit: "10"
+    nginx.ingress.kubernetes.io/rate-limit-burst: "20"
+spec:
+  rules:
+  - host: crawler.yourdomain.com
+    http:
+      paths:
+      - path: /scheduler(/|$)(.*)
+        pathType: Prefix
+        backend:
+          service:
+            name: scheduler-service
+            port:
+              number: 8080
+      - path: /scrapyd(/|$)(.*)
+        pathType: Prefix
+        backend:
+          service:
+            name: scrapyd-service
+            port:
+              number: 6800
+  # Uncomment for HTTPS
+  # tls:
+  # - hosts:
+  #   - crawler.yourdomain.com
+  #   secretName: crawler-tls
+
+---
+apiVersion: v1
+kind: ServiceMonitor
+metadata:
+  name: scrapyd-monitor
+  namespace: crawler-system
+  labels:
+    app: scrapyd
+spec:
+  selector:
+    matchLabels:
+      app: scrapyd
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 30s
+    scrapeTimeout: 10s
+
+---
+apiVersion: v1
+kind: ServiceMonitor
+metadata:
+  name: scheduler-monitor
+  namespace: crawler-system
+  labels:
+    app: job-scheduler
+spec:
+  selector:
+    matchLabels:
+      app: job-scheduler
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 15s
+    scrapeTimeout: 10s
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: scrapyd-pdb
+  namespace: crawler-system
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: scrapyd
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: crawler-service-account
+  namespace: crawler-system
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: crawler-role
+  namespace: crawler-system
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "endpoints"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets"]
+  verbs: ["get", "list", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: crawler-role-binding
+  namespace: crawler-system
+subjects:
+- kind: ServiceAccount
+  name: crawler-service-account
+  namespace: crawler-system
+roleRef:
+  kind: Role
+  name: crawler-role
+  apiGroup: rbac.authorization.k8s.io 
