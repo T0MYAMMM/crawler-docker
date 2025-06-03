@@ -6,6 +6,7 @@ RUN apt-get update && apt-get install -y \
     g++ \
     libpq-dev \
     curl \
+    gosu \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
@@ -19,12 +20,14 @@ RUN pip install --no-cache-dir -r requirements.txt flask schedule psycopg2-binar
 COPY job_scheduler.py .
 COPY config/ ./config/
 COPY utils/ ./utils/
+COPY dockerfiles/entrypoint-scheduler.sh /entrypoint.sh
 
 # Create non-root user
 RUN useradd -m -u 1000 scheduler && \
     mkdir -p /var/log/crawler && \
-    chown -R scheduler:scheduler /app /var/log/crawler
-USER scheduler
+    chmod 777 /var/log/crawler && \
+    chown -R scheduler:scheduler /app && \
+    chmod +x /entrypoint.sh
 
 # Set environment variables
 ENV PYTHONPATH=/app
@@ -37,4 +40,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8080/health || exit 1
 
 # Start scheduler
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["python", "job_scheduler.py"] 
