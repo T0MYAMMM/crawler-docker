@@ -109,7 +109,7 @@
       environment:
         - SCRAPYD_SERVICES=http://scrapyd-1:6800,http://scrapyd-2:6800,http://scrapyd-3:6800,http://scrapyd-4:6800
         - PG_HOST=172.17.0.1
-        - PG_PORT=5433
+        - PG_PORT=5432
         - PG_DATABASE=onm
         - PG_USER=onm_admin
         - PG_PASSWORD=onmdb
