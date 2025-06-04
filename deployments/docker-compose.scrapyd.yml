@@ -1,185 +1,185 @@
-version: '3.8'
+  version: '3.8'
 
-services:
-  scrapyd-1:
-    build:
-      context: ..
-      dockerfile: dockerfiles/Dockerfile.scrapyd
-    container_name: scrapyd-1
-    ports:
-      - "6801:6800"
-    volumes:
-      - ./logs:/app/logs
-      - scrapyd-1-eggs:/app/eggs
-    environment:
-      - PYTHONPATH=/app
-      - SCRAPYD_PORT=6800
-      - MAX_PROC=4
-      - MAX_PROC_PER_CPU=2
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6800/daemonstatus.json"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    networks:
-      - crawler-network
-    restart: unless-stopped
+  services:
+    scrapyd-1:
+      build:
+        context: ..
+        dockerfile: dockerfiles/Dockerfile.scrapyd
+      container_name: scrapyd-1
+      ports:
+        - "6801:6800"
+      volumes:
+        - ./logs:/app/logs
+        - scrapyd-1-eggs:/app/eggs
+      environment:
+        - PYTHONPATH=/app
+        - SCRAPYD_PORT=6800
+        - MAX_PROC=4
+        - MAX_PROC_PER_CPU=2
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:6800/daemonstatus.json"]
+        interval: 30s
+        timeout: 10s
+        retries: 3
+      networks:
+        - crawler-network
+      restart: unless-stopped
 
-  scrapyd-2:
-    build:
-      context: ..
-      dockerfile: dockerfiles/Dockerfile.scrapyd
-    container_name: scrapyd-2
-    ports:
-      - "6802:6800"
-    volumes:
-      - ./logs:/app/logs
-      - scrapyd-2-eggs:/app/eggs
-    environment:
-      - PYTHONPATH=/app
-      - SCRAPYD_PORT=6800
-      - MAX_PROC=4
-      - MAX_PROC_PER_CPU=2
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6800/daemonstatus.json"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    networks:
-      - crawler-network
-    restart: unless-stopped
+    scrapyd-2:
+      build:
+        context: ..
+        dockerfile: dockerfiles/Dockerfile.scrapyd
+      container_name: scrapyd-2
+      ports:
+        - "6802:6800"
+      volumes:
+        - ./logs:/app/logs
+        - scrapyd-2-eggs:/app/eggs
+      environment:
+        - PYTHONPATH=/app
+        - SCRAPYD_PORT=6800
+        - MAX_PROC=4
+        - MAX_PROC_PER_CPU=2
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:6800/daemonstatus.json"]
+        interval: 30s
+        timeout: 10s
+        retries: 3
+      networks:
+        - crawler-network
+      restart: unless-stopped
 
-  scrapyd-3:
-    build:
-      context: ..
-      dockerfile: dockerfiles/Dockerfile.scrapyd
-    container_name: scrapyd-3
-    ports:
-      - "6803:6800"
-    volumes:
-      - ./logs:/app/logs
-      - scrapyd-3-eggs:/app/eggs
-    environment:
-      - PYTHONPATH=/app
-      - SCRAPYD_PORT=6800
-      - MAX_PROC=4
-      - MAX_PROC_PER_CPU=2
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6800/daemonstatus.json"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    networks:
-      - crawler-network
-    restart: unless-stopped
+    scrapyd-3:
+      build:
+        context: ..
+        dockerfile: dockerfiles/Dockerfile.scrapyd
+      container_name: scrapyd-3
+      ports:
+        - "6803:6800"
+      volumes:
+        - ./logs:/app/logs
+        - scrapyd-3-eggs:/app/eggs
+      environment:
+        - PYTHONPATH=/app
+        - SCRAPYD_PORT=6800
+        - MAX_PROC=4
+        - MAX_PROC_PER_CPU=2
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:6800/daemonstatus.json"]
+        interval: 30s
+        timeout: 10s
+        retries: 3
+      networks:
+        - crawler-network
+      restart: unless-stopped
 
-  scrapyd-4:
-    build:
-      context: ..
-      dockerfile: dockerfiles/Dockerfile.scrapyd
-    container_name: scrapyd-4
-    ports:
-      - "6804:6800"
-    volumes:
-      - ./logs:/app/logs
-      - scrapyd-4-eggs:/app/eggs
-    environment:
-      - PYTHONPATH=/app
-      - SCRAPYD_PORT=6800
-      - MAX_PROC=4
-      - MAX_PROC_PER_CPU=2
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6800/daemonstatus.json"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    networks:
-      - crawler-network
-    restart: unless-stopped
+    scrapyd-4:
+      build:
+        context: ..
+        dockerfile: dockerfiles/Dockerfile.scrapyd
+      container_name: scrapyd-4
+      ports:
+        - "6804:6800"
+      volumes:
+        - ./logs:/app/logs
+        - scrapyd-4-eggs:/app/eggs
+      environment:
+        - PYTHONPATH=/app
+        - SCRAPYD_PORT=6800
+        - MAX_PROC=4
+        - MAX_PROC_PER_CPU=2
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:6800/daemonstatus.json"]
+        interval: 30s
+        timeout: 10s
+        retries: 3
+      networks:
+        - crawler-network
+      restart: unless-stopped
 
-  job-scheduler:
-    build:
-      context: ..
-      dockerfile: dockerfiles/Dockerfile.scheduler
-    container_name: job-scheduler
-    ports:
-      - "8080:8080"
-    volumes:
-      - ./logs:/var/log/crawler
-    environment:
-      - SCRAPYD_SERVICES=http://scrapyd-1:6800,http://scrapyd-2:6800,http://scrapyd-3:6800,http://scrapyd-4:6800
-      - PG_HOST=172.17.0.1
-      - PG_PORT=5432
-      - PG_DATABASE=onm
-      - PG_USER=onm_admin
-      - PG_PASSWORD=onmdb
-      - BATCH_SIZE=30
-      - MAX_CONCURRENT_JOBS=4
-      - CHECK_INTERVAL=10
-      - LOG_LEVEL=INFO
-    depends_on:
-      - scrapyd-1
-      - scrapyd-2
-      - scrapyd-3
-      - scrapyd-4
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    networks:
-      - crawler-network
-    restart: unless-stopped
+    job-scheduler:
+      build:
+        context: ..
+        dockerfile: dockerfiles/Dockerfile.scheduler
+      container_name: job-scheduler
+      ports:
+        - "8080:8080"
+      volumes:
+        - ./logs:/var/log/crawler
+      environment:
+        - SCRAPYD_SERVICES=http://scrapyd-1:6800,http://scrapyd-2:6800,http://scrapyd-3:6800,http://scrapyd-4:6800
+        - PG_HOST=172.17.0.1
+        - PG_PORT=5433
+        - PG_DATABASE=onm
+        - PG_USER=onm_admin
+        - PG_PASSWORD=onmdb
+        - BATCH_SIZE=30
+        - MAX_CONCURRENT_JOBS=4
+        - CHECK_INTERVAL=10
+        - LOG_LEVEL=INFO
+      depends_on:
+        - scrapyd-1
+        - scrapyd-2
+        - scrapyd-3
+        - scrapyd-4
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+        interval: 30s
+        timeout: 10s
+        retries: 3
+      networks:
+        - crawler-network
+      restart: unless-stopped
 
-  nginx:
-    image: nginx:alpine
-    container_name: crawler-nginx
-    ports:
-      - "80:80"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
-    depends_on:
-      - scrapyd-1
-      - scrapyd-2
-      - scrapyd-3
-      - scrapyd-4
-      - job-scheduler
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    networks:
-      - crawler-network
-    restart: unless-stopped
+    nginx:
+      image: nginx:alpine
+      container_name: crawler-nginx
+      ports:
+        - "80:80"
+      volumes:
+        - ./nginx.conf:/etc/nginx/nginx.conf
+      depends_on:
+        - scrapyd-1
+        - scrapyd-2
+        - scrapyd-3
+        - scrapyd-4
+        - job-scheduler
+      healthcheck:
+        test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+        interval: 30s
+        timeout: 10s
+        retries: 3
+      networks:
+        - crawler-network
+      restart: unless-stopped
 
-  redis:
-    image: redis:7-alpine
-    container_name: crawler-redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    command: redis-server --appendonly yes
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    networks:
-      - crawler-network
-    restart: unless-stopped
+    redis:
+      image: redis:7-alpine
+      container_name: crawler-redis
+      ports:
+        - "6379:6379"
+      volumes:
+        - redis_data:/data
+      command: redis-server --appendonly yes
+      healthcheck:
+        test: ["CMD", "redis-cli", "ping"]
+        interval: 30s
+        timeout: 10s
+        retries: 3
+      networks:
+        - crawler-network
+      restart: unless-stopped
 
-volumes:
-  scrapyd-1-eggs:
-  scrapyd-2-eggs:
-  scrapyd-3-eggs:
-  scrapyd-4-eggs:
-  redis_data:
+  volumes:
+    scrapyd-1-eggs:
+    scrapyd-2-eggs:
+    scrapyd-3-eggs:
+    scrapyd-4-eggs:
+    redis_data:
 
-networks:
-  crawler-network:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16 
+  networks:
+    crawler-network:
+      driver: bridge
+      ipam:
+        config:
+          - subnet: 172.20.0.0/16 
