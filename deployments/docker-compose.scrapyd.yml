@@ -1,15 +1,6 @@
   version: '3.8'
 
   services:
-    sshtunnel:
-      image: alpine
-      command: >
-        sh -c "apk add --no-cache openssh &&
-              ssh -f -N -L 127.0.0.1:5432:localhost:5432 root@152.42.168.128"
-      volumes:
-        - ./id_rsa:/root/.ssh/id_rsa
-      network_mode: "host"
-
     scrapyd-1:
       build:
         context: ..
@@ -117,7 +108,7 @@
         - ./logs:/var/log/crawler
       environment:
         - SCRAPYD_SERVICES=http://scrapyd-1:6800,http://scrapyd-2:6800,http://scrapyd-3:6800,http://scrapyd-4:6800
-        - PG_HOST=127.0.0.1
+        - PG_HOST=172.17.0.1
         - PG_PORT=5432
         - PG_DATABASE=onm
         - PG_USER=onm_admin
