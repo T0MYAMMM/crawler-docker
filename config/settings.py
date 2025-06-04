@@ -1,11 +1,11 @@
 # POSTGRES
 import os
 
-PG_HOST = os.getenv('PG_HOST', '127.0.0.1')
+PG_HOST = os.getenv('PG_HOST', '172.17.0.1')
 PG_DATABASE = os.getenv('PG_DATABASE', 'onm')
 PG_USER = os.getenv('PG_USER', 'onm_admin')
 PG_PASSWORD = os.getenv('PG_PASSWORD', 'onmdb')
-PG_PORT = int(os.getenv('PG_PORT', '5432'))
+PG_PORT = int(os.getenv('PG_PORT', '5433'))
 
 URLS_TABLE = 'onm_urls_new'
 PHRASES_TABLE = 'onm_phrases'
