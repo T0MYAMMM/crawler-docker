@@ -18,7 +18,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from psycopg2.extras import RealDictCursor
 from flask import Flask, jsonify, request
 
-from config.settings import PG_HOST, PG_DATABASE, PG_USER, PG_PASSWORD
+from config.settings import PG_HOST, PG_DATABASE, PG_USER, PG_PASSWORD, PG_PORT
 
 class JobScheduler:
     """Distributes crawling jobs across Scrapyd cluster."""
@@ -91,6 +91,7 @@ class JobScheduler:
         """Get database connection."""
         return psycopg2.connect(
             host=PG_HOST,
+            port=PG_PORT,
             database=PG_DATABASE,
             user=PG_USER,
             password=PG_PASSWORD,

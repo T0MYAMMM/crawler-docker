@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 from psycopg2.extras import RealDictCursor
 from typing import Dict, Any
 
-from config.settings import PG_HOST, PG_DATABASE, PG_USER, PG_PASSWORD
+from config.settings import PG_HOST, PG_DATABASE, PG_USER, PG_PASSWORD, PG_PORT
 
 class CrawlerMonitor:
     """Monitor crawler system health and performance."""
@@ -35,6 +35,7 @@ class CrawlerMonitor:
     def get_db_connection(self):
         return psycopg2.connect(
             host=PG_HOST,
+            port=PG_PORT,
             database=PG_DATABASE,
             user=PG_USER,
             password=PG_PASSWORD,

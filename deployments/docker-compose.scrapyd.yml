@@ -112,6 +112,7 @@ services:
       - PG_DATABASE=onm
       - PG_USER=onm_admin
       - PG_PASSWORD=onmdb
+      - PG_PORT=5432
       - BATCH_SIZE=30
       - MAX_CONCURRENT_JOBS=4
       - CHECK_INTERVAL=10

@@ -12,7 +12,7 @@ import psycopg2
 from datetime import datetime, timedelta
 from psycopg2.extras import RealDictCursor
 
-from config.settings import PG_HOST, PG_DATABASE, PG_USER, PG_PASSWORD
+from config.settings import PG_HOST, PG_DATABASE, PG_USER, PG_PASSWORD, PG_PORT
 
 class ScheduleManager:
     """Manages hourly phrase activation schedule."""
@@ -36,6 +36,7 @@ class ScheduleManager:
         """Get database connection."""
         return psycopg2.connect(
             host=PG_HOST,
+            port=PG_PORT,
             database=PG_DATABASE,
             user=PG_USER,
             password=PG_PASSWORD,

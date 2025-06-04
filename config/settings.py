@@ -1,8 +1,12 @@
 # POSTGRES
-PG_HOST = "localhost"
-PG_DATABASE = "onm"
-PG_USER = "onm_admin"
-PG_PASSWORD = "onmdb"
+import os
+
+PG_HOST = os.getenv('PG_HOST', 'localhost')
+PG_DATABASE = os.getenv('PG_DATABASE', 'onm')
+PG_USER = os.getenv('PG_USER', 'onm_admin')
+PG_PASSWORD = os.getenv('PG_PASSWORD', 'onmdb')
+PG_PORT = int(os.getenv('PG_PORT', '5432'))
+
 URLS_TABLE = 'onm_urls_new'
 PHRASES_TABLE = 'onm_phrases'
 PROJECTS_TABLE = 'onm_projects'

@@ -17,7 +17,7 @@ from typing import List, Dict, Any, Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from psycopg2.extras import RealDictCursor
 
-from config.settings import PG_HOST, PG_DATABASE, PG_USER, PG_PASSWORD
+from config.settings import PG_HOST, PG_DATABASE, PG_USER, PG_PASSWORD, PG_PORT
 
 class ScrapydController:
     """Controls multiple Scrapyd instances for distributed crawling."""
@@ -54,6 +54,7 @@ class ScrapydController:
         """Get database connection."""
         return psycopg2.connect(
             host=PG_HOST,
+            port=PG_PORT,
             database=PG_DATABASE,
             user=PG_USER,
             password=PG_PASSWORD,
