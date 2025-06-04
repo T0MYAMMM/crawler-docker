@@ -2,6 +2,15 @@ version: '3.8'
 
 services:
   # Single Scrapyd instance for testing
+  sshtunnel:
+    image: alpine
+    command: >
+      sh -c "apk add --no-cache openssh &&
+             ssh -f -N -L 127.0.0.1:5432:localhost:5432 root@152.42.168.128"
+    volumes:
+      - ./id_rsa:/root/.ssh/id_rsa
+    network_mode: "host"
+
   scrapyd-test:
     build:
       context: .
