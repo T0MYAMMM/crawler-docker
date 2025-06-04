@@ -102,13 +102,12 @@ services:
       context: ..
       dockerfile: dockerfiles/Dockerfile.scheduler
     container_name: job-scheduler
-    ports:
-      - "8080:8080"
+    network_mode: host
     volumes:
       - ./logs:/var/log/crawler
     environment:
-      - SCRAPYD_SERVICES=http://scrapyd-1:6800,http://scrapyd-2:6800,http://scrapyd-3:6800,http://scrapyd-4:6800
-      - PG_HOST=host.docker.internal
+      - SCRAPYD_SERVICES=http://localhost:6801,http://localhost:6802,http://localhost:6803,http://localhost:6804
+      - PG_HOST=localhost
       - PG_PORT=5432
       - PG_DATABASE=onm
       - PG_USER=onm_admin
@@ -127,11 +126,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-    networks:
-      - crawler-network
     restart: unless-stopped
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
 
   nginx:
     image: nginx:alpine
