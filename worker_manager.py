@@ -160,22 +160,22 @@ class WorkerManager:
             
         self.logger.info(f"Processing batch of {len(phrases)} phrases")
         
-        # Extract phrase texts for spider
-        phrase_texts = [p['phrase_text'] for p in phrases]
+        # Extract phrase texts for processing
+        phrase_texts = [p['phrases'] for p in phrases]
         
-        # Run spider
+        # Run spider with this batch
         success = self.run_spider(phrase_texts)
         
-        # Update phrase statuses
+        # Update phrase status based on results
         processed_count = 0
         for phrase in phrases:
             if success:
-                if self.complete_phrase(phrase['phrase_id']):
+                if self.complete_phrase(phrase['id']):
                     processed_count += 1
-                    self.logger.debug(f"Completed phrase: {phrase['phrase_text']}")
+                    self.logger.debug(f"Completed phrase: {phrase['phrases']}")
             else:
-                self.fail_phrase(phrase['phrase_id'])
-                self.logger.warning(f"Failed phrase: {phrase['phrase_text']}")
+                self.fail_phrase(phrase['id'])
+                self.logger.warning(f"Failed phrase: {phrase['phrases']}")
                 
         self.logger.info(f"Processed {processed_count}/{len(phrases)} phrases successfully")
         return processed_count

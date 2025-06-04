@@ -200,7 +200,7 @@ class ScrapydController:
             return
             
         # Extract phrase texts
-        phrases = [p['phrase_text'] for p in phrases_data]
+        phrases = [p['phrases'] for p in phrases_data]
         
         # Get least loaded server
         server = self.get_least_loaded_server()

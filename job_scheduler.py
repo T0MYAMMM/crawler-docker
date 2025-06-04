@@ -291,7 +291,7 @@ setup(
         if not phrases_data:
             return
             
-        phrases = [p['phrase_text'] for p in phrases_data]
+        phrases = [p['phrases'] for p in phrases_data]
         
         # Get available service
         service = self.get_least_loaded_service()
