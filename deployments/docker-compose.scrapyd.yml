@@ -108,11 +108,11 @@ services:
       - ./logs:/var/log/crawler
     environment:
       - SCRAPYD_SERVICES=http://scrapyd-1:6800,http://scrapyd-2:6800,http://scrapyd-3:6800,http://scrapyd-4:6800
-      - PG_HOST=postgres
+      - PG_HOST=host.docker.internal
+      - PG_PORT=5432
       - PG_DATABASE=onm
       - PG_USER=onm_admin
       - PG_PASSWORD=onmdb
-      - PG_PORT=5432
       - BATCH_SIZE=30
       - MAX_CONCURRENT_JOBS=4
       - CHECK_INTERVAL=10
@@ -122,7 +122,6 @@ services:
       - scrapyd-2
       - scrapyd-3
       - scrapyd-4
-      - postgres
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
@@ -131,27 +130,8 @@ services:
     networks:
       - crawler-network
     restart: unless-stopped
-
-  postgres:
-    image: postgres:15
-    container_name: crawler-postgres
-    environment:
-      - POSTGRES_DB=onm
-      - POSTGRES_USER=onm_admin
-      - POSTGRES_PASSWORD=onmdb
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-    ports:
-      - "5433:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U onm_admin -d onm"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    networks:
-      - crawler-network
-    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   nginx:
     image: nginx:alpine
@@ -197,7 +177,6 @@ volumes:
   scrapyd-2-eggs:
   scrapyd-3-eggs:
   scrapyd-4-eggs:
-  postgres_data:
   redis_data:
 
 networks:
